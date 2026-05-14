@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users can read/write their own profile
+    // Other users can read basic profile info (username, avatar, level)
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    // Habits
+    // Owner can read/write
+    // Shared users can read
+    match /habits/{habitId} {
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.ownerId == request.auth.uid || request.auth.uid in resource.data.sharedWith);
+    }
+
+    // Completions
+    // Only owner can read/write
+    match /completions/{completionId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Friend Requests
+    match /friendRequests/{reqId} {
+      allow read: if request.auth != null && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow delete: if request.auth != null && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+    }
+
+    // Notifications
+    match /notifications/{notifId} {
+      allow read: if request.auth != null && resource.data.toUid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.toUid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.toUid == request.auth.uid;
+    }
+
+    // Challenges
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null && (request.auth.uid in resource.data.memberIds || resource.data.creatorId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      allow update: if request.auth != null && (request.auth.uid in resource.data.memberIds || resource.data.creatorId == request.auth.uid);
+    }
+  }
+}
