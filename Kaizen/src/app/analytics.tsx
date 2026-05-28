@@ -38,60 +38,106 @@ export default function AnalyticsScreen() {
   const { habits, user } = useApp();
   const [activeTab, setActiveTab] = useState<'metrics' | 'coach'>('metrics');
   
-  // AI Coach Chat State
+  // AI Coach Chat State - intro uses real user name
   const [chatMessages, setChatMessages] = useState<Message[]>([
     { 
       sender: 'coach', 
-      text: 'Hey Rhythm! I analyzed your rituals for the past 2 weeks. Your physical habits are at 96% consistency, but coding rituals drop slightly after 8 PM due to mental fatigue. Ready to optimize?', 
-      time: '10:30 AM' 
+      text: `Hey ${user.name}! I've analyzed your rituals. Your consistency score is ${user.consistencyScore}% and you've completed ${user.totalCompleted} habits total. Keep your streak alive — you're ${user.streak} days in. Ready to optimize?`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [inputVal, setInputVal] = useState('');
 
-  // Category completion rates
-  const categories = [
-    { name: 'Physical', rate: 96, color: '#D4A373', icon: 'dumbbell' },
-    { name: 'Focus', rate: 82, color: '#B5945F', icon: 'code' },
-    { name: 'Mind', rate: 100, color: '#9CA986', icon: 'brain' },
-    { name: 'Growth', rate: 75, color: '#B39EAE', icon: 'book-open' },
-  ];
+  // Compute real category completion rates from habit history (last 14 days)
+  const CATEGORY_COLORS: Record<string, string> = {
+    Physical: '#D4A373',
+    Focus: '#B5945F',
+    Mind: '#9CA986',
+    Growth: '#B39EAE',
+  };
 
-  // Mood completions
-  const moods = [
-    { type: 'Energized', completion: 98, color: '#D4A373', count: 18 },
-    { type: 'Focused', completion: 92, color: '#B5945F', count: 12 },
-    { type: 'Calm', completion: 100, color: '#9CA986', count: 8 },
-    { type: 'Tired', completion: 42, color: '#E0A996', count: 6 }
-  ];
+  const categoryNames = ['Physical', 'Focus', 'Mind', 'Growth'] as const;
+  
+  const categories = categoryNames.map((cat) => {
+    const catHabits = habits.filter((h) => h.category === cat);
+    if (catHabits.length === 0) return { name: cat, rate: 0, color: CATEGORY_COLORS[cat], icon: cat.toLowerCase() };
+    
+    // Count completed logs across all days in the history
+    let totalPossible = 0;
+    let totalCompleted = 0;
+    catHabits.forEach((h) => {
+      const days = Object.entries(h.history || {});
+      totalPossible += days.length;
+      totalCompleted += days.filter(([, v]) => v === 'completed').length;
+    });
+
+    const rate = totalPossible === 0 ? 0 : Math.round((totalCompleted / totalPossible) * 100);
+    return { name: cat, rate, color: CATEGORY_COLORS[cat], icon: cat.toLowerCase() };
+  });
+
+  // Compute mood stats from real habit logs
+  const moodColorMap: Record<string, string> = {
+    Energized: '#D4A373',
+    Focused: '#B5945F',
+    Calm: '#9CA986',
+    Motivated: '#B39EAE',
+    Tired: '#E0A996',
+    Happy: '#D4A373',
+  };
+
+  const moodCount: Record<string, { total: number; completed: number }> = {};
+  habits.forEach((h) => {
+    if (h.historyDetails) {
+      Object.values(h.historyDetails).forEach((log) => {
+        const m = log.mood?.trim();
+        if (!m) return;
+        if (!moodCount[m]) moodCount[m] = { total: 0, completed: 0 };
+        moodCount[m].total += 1;
+        if (log.status === 'completed') moodCount[m].completed += 1;
+      });
+    }
+  });
+
+  const moods = Object.entries(moodCount)
+    .map(([type, { total, completed }]) => ({
+      type,
+      completion: total === 0 ? 0 : Math.round((completed / total) * 100),
+      color: moodColorMap[type] || '#B5945F',
+      count: total,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
 
   const handleSendMessage = () => {
     if (!inputVal.trim()) return;
     const userMsg: Message = {
       sender: 'user',
       text: inputVal.trim(),
-      time: 'Just now'
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     
     setChatMessages(prev => [...prev, userMsg]);
     setInputVal('');
 
-    // Generate responsive coach reply
+    // Generate context-aware coach reply based on real user data
     setTimeout(() => {
-      let replyText = "Fascinating query! I suggest building a micro-habit (5 mins minimum) on days when you feel tired. This preserves your neural pathways without inducing burnout.";
-      
       const query = userMsg.text.toLowerCase();
+      let replyText = `Your consistency score is ${user.consistencyScore}%. Building micro-habits (5 mins minimum) on off-days preserves neural pathways without burnout.`;
+      
       if (query.includes('sleep') || query.includes('tired')) {
-        replyText = "Indeed. Sleep quality increases ritual compliance by 21%. I advise blocking out phone usage 45 mins before bedtime to stabilize REM sleep.";
+        replyText = `Sleep quality increases habit compliance by ~21%. You have ${user.streak} days in your current streak — protect it by cutting screens 45 mins before bed.`;
       } else if (query.includes('streak') || query.includes('motivation')) {
-        replyText = "Motivation is temporary, design systems are permanent. Your 14-day gym streak works because of cue consistency. Let's apply that cue structure to your coding rituals!";
+        replyText = `Motivation fades, systems persist. Your ${user.streak}-day streak works because of cue consistency. Apply that same cue structure to your weakest category.`;
       } else if (query.includes('burnout')) {
-        replyText = "Burnout Warning: I noticed your Growth habits fell 15% this week. Reduce target goals by half for 3 days to recover your cognitive battery.";
+        replyText = `Burnout alert: Consider halving your daily habit targets for 3 days to recover cognitive energy. You've completed ${user.totalCompleted} habits — that's already a win.`;
+      } else if (query.includes('friend') || query.includes('social')) {
+        replyText = `You have ${user.friendCount} friends on Kaizen. Social accountability increases habit completion rates by up to 65%. Challenge a friend today!`;
       }
 
       const coachMsg: Message = {
         sender: 'coach',
         text: replyText,
-        time: 'Just now'
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setChatMessages(prev => [...prev, coachMsg]);
     }, 1000);

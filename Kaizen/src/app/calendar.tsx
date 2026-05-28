@@ -126,7 +126,9 @@ export default function CalendarScreen() {
                 </View>
                 <View style={styles.streakGridCard}>
                   <Trophy color="#B5945F" size={24} fill="#B5945F" />
-                  <Text style={styles.streakValue}>28 Days</Text>
+                  <Text style={styles.streakValue}>
+                    {habits.length > 0 ? Math.max(...habits.map(h => h.streak), user.streak) : user.streak} Days
+                  </Text>
                   <Text style={styles.streakLabel}>All-Time Peak</Text>
                 </View>
               </View>

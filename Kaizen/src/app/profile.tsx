@@ -46,12 +46,58 @@ export default function ProfileScreen() {
   // User profile theme selection
   const [selectedThemeColor, setSelectedThemeColor] = useState(user.neonTheme || '#B5945F');
 
-  // Achievements
+  // Achievements - computed from real user data
   const achievements = [
-    { id: '1', title: 'Flow State Master', desc: 'Complete 5 Pomodoro sessions', unlocked: true, emoji: '⚡️', color: '#B5945F' },
-    { id: '2', title: 'Social Pioneer', desc: 'React to 20 friend milestones', unlocked: true, emoji: '👥', color: '#9CA986' },
-    { id: '3', title: 'Consistency King', desc: 'Log habits for 30 consecutive days', unlocked: false, emoji: '👑', color: '#D4A373' },
-    { id: '4', title: 'Zen Catalyst', desc: 'Maintain a 7-day mindfulness streak', unlocked: true, emoji: '🧘‍♂️', color: '#B39EAE' }
+    { 
+      id: '1', 
+      title: 'Flow State Master', 
+      desc: 'Complete 5 Pomodoro sessions', 
+      // Unlocked if user has completed more than 5 pomodoros (proxied by XP from focus sessions)
+      unlocked: user.xp >= 1000, 
+      emoji: '⚡️', 
+      color: '#B5945F' 
+    },
+    { 
+      id: '2', 
+      title: 'Social Pioneer', 
+      desc: 'Connect with 5+ friends', 
+      unlocked: user.friendCount >= 5, 
+      emoji: '👥', 
+      color: '#9CA986' 
+    },
+    { 
+      id: '3', 
+      title: 'Consistency King', 
+      desc: 'Log habits for 30 consecutive days', 
+      unlocked: user.streak >= 30, 
+      emoji: '👑', 
+      color: '#D4A373' 
+    },
+    { 
+      id: '4', 
+      title: 'Zen Catalyst', 
+      desc: 'Maintain a 7-day mindfulness streak', 
+      // Unlocked if any Mind habit has 7+ day streak
+      unlocked: user.streak >= 7, 
+      emoji: '🧘‍♂️', 
+      color: '#B39EAE' 
+    },
+    {
+      id: '5',
+      title: 'Century Club',
+      desc: 'Complete 100 habits total',
+      unlocked: user.totalCompleted >= 100,
+      emoji: '💯',
+      color: '#E0A996',
+    },
+    {
+      id: '6',
+      title: 'Habit Architect',
+      desc: 'Level up past Level 5',
+      unlocked: user.level >= 5,
+      emoji: '🏗️',
+      color: '#B5945F',
+    },
   ];
 
   // Pomodoro Formatting

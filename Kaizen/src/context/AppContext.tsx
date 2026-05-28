@@ -34,6 +34,7 @@ interface AppContextType {
 
   // Auth State
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   signUp: (name: string, username: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
@@ -211,6 +212,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         declineFriendRequest,
         sendChatMessage,
         isAuthenticated: store.isAuthenticated,
+        isLoading: store.isLoading,
         login,
         signUp,
         logout,

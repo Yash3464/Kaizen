@@ -4,23 +4,33 @@ import AppTabs from '@/components/app-tabs';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { CelebrationOverlay } from '@/components/CelebrationOverlay';
 import { AuthScreen } from '@/components/auth-screen';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const BeigeTheme = {
   ...DefaultTheme,
   dark: false,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#B5945F', // Muted Gold Accent
-    background: '#FAF6EE', // Serene beige
-    card: '#FAF6EE', // Tab bar background
-    text: '#2D2820', // Soft graphite
-    border: '#E8DFCE', // Subtle beige borders
+    primary: '#B5945F',
+    background: '#FAF6EE',
+    card: '#FAF6EE',
+    text: '#2D2820',
+    border: '#E8DFCE',
     notification: '#B5945F',
   },
 };
 
 function RootLayoutContent() {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, isLoading } = useApp();
+
+  // Show neutral loading screen while Supabase resolves the session
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#B5945F" />
+      </View>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AuthScreen />;
@@ -34,6 +44,15 @@ function RootLayoutContent() {
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#FAF6EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 export default function TabLayout() {
   return (
