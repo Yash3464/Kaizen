@@ -15,6 +15,30 @@ export interface Habit {
   history: { [date: string]: 'completed' | 'skipped' | 'missed' };
 }
 
+export interface Friend {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  streak: number;
+  consistencyScore: number;
+}
+
+export interface FriendRequest {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  type: 'incoming' | 'outgoing';
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId: 'me' | string;
+  text: string;
+  time: string;
+}
+
 export interface FriendActivity {
   id: string;
   userName: string;

@@ -29,19 +29,19 @@ export function AuthScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
     if (isLogin) {
-      const res = login(email, password);
+      const res = await login(email, password);
       if (!res.success) {
         setErrorMsg(res.message);
       } else {
         setSuccessMsg(res.message);
       }
     } else {
-      const res = signUp(name, username, email, password);
+      const res = await signUp(name, username, email, password);
       if (!res.success) {
         setErrorMsg(res.message);
       } else {

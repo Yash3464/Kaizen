@@ -68,9 +68,9 @@ export default function SocialScreen() {
     setCommentInput(prev => ({ ...prev, [activityId]: '' }));
   };
 
-  const handleSearchAndAdd = () => {
+  const handleSearchAndAdd = async () => {
     if (!searchQuery.trim()) return;
-    const res = sendFriendRequest(searchQuery);
+    const res = await sendFriendRequest(searchQuery);
     setSearchQuery('');
     setSearchStatus({ type: res.success ? 'success' : 'error', message: res.message });
     setTimeout(() => {

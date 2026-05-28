@@ -20,3 +20,9 @@ yarn-error.*
 .DS_Store
 Kaizen/.DS_Store
 *.pem
+
+# Environment Secrets
+.env
+.env.*
+Kaizen/.env
+Kaizen/.env.*
