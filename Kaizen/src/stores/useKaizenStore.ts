@@ -99,6 +99,9 @@ export const useKaizenStore = create<KaizenState>((set, get) => ({
         await get().fetchChallenges();
         await get().fetchChatMessages();
         
+        // ✅ FIX: Mark loading done AFTER all data is fetched
+        set({ isLoading: false });
+        
         // Setup realtime channels
         get().setupRealtimeSubscriptions(session.user.id);
       } else {
@@ -186,13 +189,22 @@ export const useKaizenStore = create<KaizenState>((set, get) => ({
       )
       .subscribe();
 
-    // Channel for Chat Messages
+    // Channel for Chat Messages — filtered so only messages involving THIS user trigger
     const chatChannel = supabase
-      .channel('chat-changes')
+      .channel(`chat-changes-${userId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        () => { get().fetchChatMessages(); }
+        (payload: any) => {
+          // Only refresh if this message involves us
+          const currentUsername = get().user?.username;
+          if (
+            payload.new?.sender_id === userId ||
+            payload.new?.receiver_username === currentUsername
+          ) {
+            get().fetchChatMessages();
+          }
+        }
       )
       .subscribe();
 
@@ -901,19 +913,39 @@ export const useKaizenStore = create<KaizenState>((set, get) => ({
     const session = (await supabase.auth.getSession()).data.session;
     if (!session) return;
 
-    // Insert message
-    const { data, error } = await supabase
+    // ✅ Optimistic update — message appears instantly in UI
+    const optimisticId = `optimistic-${Date.now()}`;
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    set((state) => ({
+      chatMessages: {
+        ...state.chatMessages,
+        [friendUsername]: [
+          ...(state.chatMessages[friendUsername] || []),
+          { id: optimisticId, senderId: 'me', text: text.trim(), time: timeStr },
+        ],
+      },
+    }));
+
+    // Persist to database
+    const { error } = await supabase
       .from('chat_messages')
       .insert({
         sender_id: session.user.id,
         receiver_username: friendUsername,
         text: text.trim(),
-      })
-      .select()
-      .single();
+      });
 
-    if (error) throw error;
-
-    await get().fetchChatMessages();
+    if (error) {
+      // Rollback optimistic update on error
+      set((state) => ({
+        chatMessages: {
+          ...state.chatMessages,
+          [friendUsername]: (state.chatMessages[friendUsername] || []).filter(
+            (m) => m.id !== optimisticId
+          ),
+        },
+      }));
+    }
+    // Realtime subscription will sync the confirmed DB message automatically
   },
 }));

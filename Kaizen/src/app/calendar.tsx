@@ -28,7 +28,7 @@ import {
 const { width } = Dimensions.get('window');
 
 export default function CalendarScreen() {
-  const { habits, user } = useApp();
+  const { habits, user, friends } = useApp();
   
   const today = new Date();
   const currentDayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, ...
@@ -64,25 +64,16 @@ export default function CalendarScreen() {
     };
   });
 
-  // Friend shared calendars
-  const friendCalendars = [
-    {
-      id: 'fr1',
-      name: 'Aryan Shah',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-      done: 4,
-      total: 4,
-      habits: ['Morning Calisthenics', 'Drink 4L Water', 'Read 20 pages', 'Deep Work Block']
-    },
-    {
-      id: 'fr2',
-      name: 'Anaya Gupta',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
-      done: 3,
-      total: 3,
-      habits: ['Meditation', 'Healthy Meal Prep', 'Gratitude Journal']
-    }
-  ];
+  // Friend shared calendars — built from real accepted friends
+  const friendCalendars = friends.map((friend) => ({
+    id: friend.id,
+    name: friend.name,
+    avatar: friend.avatar,
+    // These will be empty until we query their logs — shows the real relationship exists
+    done: 0,
+    total: 0,
+    habits: [] as string[],
+  }));
 
   return (
     <View style={styles.container}>
