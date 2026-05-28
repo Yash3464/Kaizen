@@ -1,13 +1,22 @@
-node_modules/
-.expo/
-dist/
+# dependencies
+Kaizen/node_modules/
+
+# Expo
+Kaizen/.expo/
+Kaizen/dist/
+Kaizen/web-build/
+Kaizen/expo-env.d.ts
+
+# Native folders (if generated)
+Kaizen/ios/
+Kaizen/android/
+
+# debug
 npm-debug.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-veda
-.idea/
+yarn-debug.*
+yarn-error.*
+
+# macOS
 .DS_Store
+Kaizen/.DS_Store
+*.pem
