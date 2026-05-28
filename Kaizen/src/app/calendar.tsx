@@ -30,18 +30,39 @@ const { width } = Dimensions.get('window');
 export default function CalendarScreen() {
   const { habits, user } = useApp();
   
-  const [selectedDate, setSelectedDate] = useState<string>('2026-05-28');
+  const today = new Date();
+  const currentDayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, ...
+  const mondayOffset = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
+  const todayStr = today.toISOString().split('T')[0];
+
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [activeView, setActiveView] = useState<'me' | 'friends'>('me');
 
-  const daysOfWeek = [
-    { name: 'Mon', day: '24', date: '2026-05-24', done: 3, total: 4 },
-    { name: 'Tue', day: '25', date: '2026-05-25', done: 4, total: 4 },
-    { name: 'Wed', day: '26', date: '2026-05-26', done: 4, total: 4 },
-    { name: 'Thu', day: '27', date: '2026-05-27', done: 2, total: 4 },
-    { name: 'Fri', day: '28', date: '2026-05-28', done: 2, total: 4 }, // Today
-    { name: 'Sat', day: '29', date: '2026-05-29', done: 0, total: 4 },
-    { name: 'Sun', day: '30', date: '2026-05-30', done: 0, total: 4 },
-  ];
+  const daysOfWeek = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + mondayOffset + i);
+    const dateStr = d.toISOString().split('T')[0];
+    
+    // Tally actual completed habits for this date
+    let done = 0;
+    const total = habits.length;
+    habits.forEach((h) => {
+      if (h.history && h.history[dateStr] === 'completed') {
+        done += 1;
+      }
+    });
+
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayNum = d.toLocaleDateString('en-US', { day: 'numeric' });
+
+    return {
+      name: dayName,
+      day: dayNum,
+      date: dateStr,
+      done,
+      total,
+    };
+  });
 
   // Friend shared calendars
   const friendCalendars = [
@@ -161,9 +182,11 @@ export default function CalendarScreen() {
 
                 <View style={styles.logsContainer}>
                   {habits.map((h) => {
-                    const status = selectedDate === '2026-05-28' 
-                      ? (h.progress >= 1.0 ? 'completed' : h.missedReason ? 'skipped' : 'pending')
-                      : (Math.random() > 0.35 ? 'completed' : 'skipped');
+                    const log = h.historyDetails?.[selectedDate];
+                    const status = log?.status || (selectedDate === todayStr ? (h.progress >= 1.0 ? 'completed' : h.missedReason ? 'skipped' : 'pending') : 'pending');
+                    const note = log?.notes || (selectedDate === todayStr && h.notes ? h.notes : '');
+                    const mood = log?.mood || (selectedDate === todayStr && h.mood ? h.mood : '');
+                    const missedReason = log?.missedReason || (selectedDate === todayStr && h.missedReason ? h.missedReason : '');
 
                     return (
                       <View key={h.id} style={styles.logItem}>
@@ -173,12 +196,16 @@ export default function CalendarScreen() {
                           {status === 'completed' ? (
                             <View style={styles.logStatusTextRow}>
                               <CheckCircle size={12} color="#9CA986" />
-                              <Text style={[styles.logStatusText, { color: '#9CA986' }]}>Completed successfully</Text>
+                              <Text style={[styles.logStatusText, { color: '#9CA986' }]}>
+                                {note || 'Completed successfully'}
+                              </Text>
                             </View>
                           ) : status === 'skipped' ? (
                             <View style={styles.logStatusTextRow}>
                               <HelpCircle size={12} color="#E0A996" />
-                              <Text style={[styles.logStatusText, { color: '#E0A996' }]}>Skipped: Focus on other core milestones</Text>
+                              <Text style={[styles.logStatusText, { color: '#E0A996' }]}>
+                                Skipped: {missedReason || 'Focus on other core milestones'}
+                              </Text>
                             </View>
                           ) : (
                             <View style={styles.logStatusTextRow}>
@@ -187,12 +214,12 @@ export default function CalendarScreen() {
                             </View>
                           )}
                         </View>
-                        {status === 'completed' && (
+                        {status === 'completed' && mood ? (
                           <View style={styles.vibeCard}>
                             <Smile size={10} color="#9CA986" />
-                            <Text style={styles.vibeText}>Energized</Text>
+                            <Text style={styles.vibeText}>{mood}</Text>
                           </View>
-                        )}
+                        ) : null}
                       </View>
                     );
                   })}

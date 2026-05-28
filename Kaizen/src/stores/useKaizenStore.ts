@@ -342,6 +342,14 @@ export const useKaizenStore = create<KaizenState>((set, get) => ({
     const mappedHabits: Habit[] = (habitsData || []).map((h) => {
       const hLogs = logsMap[h.id] || [];
       const history: { [date: string]: 'completed' | 'skipped' | 'missed' } = {};
+      const historyDetails: {
+        [date: string]: {
+          status: 'completed' | 'skipped' | 'missed';
+          notes?: string;
+          mood?: string;
+          missedReason?: string;
+        }
+      } = {};
       let progress = 0.0;
       let notes = '';
       let mood = '';
@@ -349,6 +357,12 @@ export const useKaizenStore = create<KaizenState>((set, get) => ({
 
       hLogs.forEach((log) => {
         history[log.logged_date] = log.status as any;
+        historyDetails[log.logged_date] = {
+          status: log.status as any,
+          notes: log.notes,
+          mood: log.mood,
+          missedReason: log.missed_reason,
+        };
         if (log.logged_date === todayStr) {
           progress = log.status === 'completed' ? 1.0 : 0.0;
           notes = log.notes || '';
@@ -372,6 +386,7 @@ export const useKaizenStore = create<KaizenState>((set, get) => ({
         reminderTime: h.reminder_time || '',
         visibility: h.visibility as any,
         history,
+        historyDetails,
       };
     });
 

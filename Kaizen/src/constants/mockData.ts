@@ -13,6 +13,14 @@ export interface Habit {
   reminderTime: string;
   visibility: 'Private' | 'Friends' | 'Public' | 'Group';
   history: { [date: string]: 'completed' | 'skipped' | 'missed' };
+  historyDetails?: {
+    [date: string]: {
+      status: 'completed' | 'skipped' | 'missed';
+      notes?: string;
+      mood?: string;
+      missedReason?: string;
+    }
+  };
 }
 
 export interface Friend {
